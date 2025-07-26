@@ -71,7 +71,7 @@ const Home = () => {
           <div 
             className="absolute inset-0 opacity-20"
             style={{
-              backgroundImage: `url('src/assets/Asset 4.svg')`,
+              backgroundImage: `url('/assets/Asset 4.svg')`,
               backgroundSize: 'auto 200px',
               backgroundRepeat: 'repeat',
               backgroundPosition: 'center top',

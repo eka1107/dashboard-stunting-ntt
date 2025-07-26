@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 // Menambahkan ikon yang relevan
-import { Sun, Moon, Satellite, Expand, Maximize, Minimize, ChevronDown, Check, Target, PieChart, ArrowUpCircle, ArrowDownCircle, TrendingUp, Globe, Info, Award, ArrowLeft, ChevronUp, Map, Building, Landmark, AlertTriangle, Download, Camera, Loader2 } from 'lucide-react';
+import { Sun, Moon, Satellite, Expand, Maximize, Minimize, ChevronDown, Check, Target, PieChart, ArrowUpCircle, ArrowDownCircle, TrendingUp, Globe, Info, Award, ArrowLeft, ChevronUp, Map, Building, Landmark, AlertTriangle, Download, Camera, Loader2, Search, X } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 // DIHAPUS: Import html2canvas yang menyebabkan error
@@ -144,8 +144,10 @@ const CustomMultiSelect = ({
         }).join(', ');
     };
     return (
-        <div className="relative w-72" ref={dropdownRef}>
-            <button type="button" disabled={disabled} className="w-full bg-gray-100 border-gray-300 rounded-lg text-sm px-4 py-2 text-left flex items-center justify-between disabled:bg-gray-200 disabled:cursor-not-allowed" onClick={() => !disabled && setIsOpen(!isOpen)}>
+        // --- PERUBAHAN DIMULAI DI SINI: Penyesuaian Responsif untuk CustomMultiSelect ---
+        <div className="relative w-full" ref={dropdownRef}>
+        {/* --- PERUBAHAN SELESAI DI SINI --- */}
+            <button type="button" disabled={disabled} className="w-full bg-gray-100 border-gray-300 rounded-lg text-sm px-4 py-2 text-left flex items-center justify-between disabled:bg-gray-200 disabled:cursor-not-allowed">
                 <span className="truncate">{getDisplayText()}</span>
                 <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -435,7 +437,6 @@ const Dashboard = () => {
 
         const filteredGeoJson = { type: 'FeatureCollection', features: filteredFeatures };
         geoJsonLayerRef.current = L.geoJSON(filteredGeoJson, {
-            // --- PERUBAHAN DIMULAI DI SINI ---
             style: (feature) => {
                 const baseStyle = {
                     fillColor: getCategory(feature.properties.prevalence).color,
@@ -445,19 +446,17 @@ const Dashboard = () => {
                     fillOpacity: 0.75,
                 };
 
-                // Tambahkan gaya khusus jika levelnya adalah provinsi dan provinsinya adalah NTT
                 if (activeLevel === 'provinsi' && feature.properties.PROVINSI === 'Nusa Tenggara Timur') {
                     return {
                         ...baseStyle,
-                        weight: 4, // Garis batas lebih tebal
-                        color: '#3b82f6', // Warna biru untuk menonjol
-                        fillOpacity: 0.85, // Sedikit lebih pekat
+                        weight: 4, 
+                        color: '#3b82f6', 
+                        fillOpacity: 0.85, 
                     };
                 }
 
                 return baseStyle;
             },
-            // --- PERUBAHAN SELESAI DI SINI ---
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
                 const estimasi = props.prevalence;
@@ -694,7 +693,7 @@ const Dashboard = () => {
                 .card-content.fading { opacity: 0; transform: translateX(-10px); }
                 .card-content.entering { opacity: 0; transform: translateX(10px); animation: card-enter 0.3s ease-out forwards; }
                 @keyframes card-enter { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
-                .card { @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6; }
+                .card { @apply bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6; }
                 .list-item-highlighted { @apply bg-blue-100 ring-2 ring-blue-400; }
                 .card-highlighted { @apply shadow-2xl ring-2 ring-offset-2 ring-blue-500; }
                 .scrollable-list { max-height: 140px; overflow-y: auto; padding-right: 8px; }
@@ -706,7 +705,7 @@ const Dashboard = () => {
                 .fact-carousel { transition: opacity 0.5s ease-in-out; opacity: 1; }
                 .fact-carousel.fading { opacity: 0; }
                 .bg-pattern { position: relative; background-color: white; }
-                .bg-pattern::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50vh; background-image: url('src/assets/Asset 4.svg'); background-size: auto 200px; background-repeat: repeat; background-position: center top; filter: grayscale(100%) brightness(4) contrast(0.8); opacity: 0.2; z-index: 0; }
+                .bg-pattern::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50vh; background-image: url('/assets/Asset 4.svg'); background-size: auto 200px; background-repeat: repeat; background-position: center top; filter: grayscale(100%) brightness(4) contrast(0.8); opacity: 0.2; z-index: 0; }
                 .bg-pattern::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50vh; background: linear-gradient(to bottom, transparent 0%, white 80%); z-index: 1; pointer-events: none; }
                 .bg-pattern > * { position: relative; z-index: 10; }
             `}</style>
@@ -720,18 +719,20 @@ const Dashboard = () => {
                                 <h1 className="text-4xl md:text-5xl font-bold text-gray-900"><span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Dashboard Prevalensi Stunting</span></h1>
                                 <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">Level {levelName[activeLevel]} di Nusa Tenggara Timur tahun 2023</p>
                                 
-                                <div ref={levelButtonsRef} className="relative flex justify-center items-center bg-gray-100 p-1 rounded-xl max-w-md mx-auto shadow-inner">
+                                {/* --- PERUBAHAN DIMULAI DI SINI: Penyesuaian Responsif untuk Level Switcher --- */}
+                                <div ref={levelButtonsRef} className="relative flex justify-center items-center bg-gray-100 p-1 rounded-xl w-full max-w-sm sm:max-w-md mx-auto shadow-inner">
+                                {/* --- PERUBAHAN SELESAI DI SINI --- */}
                                     <div
                                         className="absolute left-0 h-[85%] bg-gradient-to-r from-red-500 to-orange-500 rounded-lg shadow-md transition-all duration-300 ease-in-out"
                                         style={sliderStyle}
                                     ></div>
-                                    <button data-level="kecamatan" onClick={() => changeLevel('kecamatan')} className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kecamatan' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                                    <button data-level="kecamatan" onClick={() => changeLevel('kecamatan')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kecamatan' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
                                         <Map size={16}/> Kecamatan
                                     </button>
-                                    <button data-level="kabupaten" onClick={() => changeLevel('kabupaten')} className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kabupaten' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                                    <button data-level="kabupaten" onClick={() => changeLevel('kabupaten')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kabupaten' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
                                         <Building size={16}/> Kabupaten/Kota
                                     </button>
-                                    <button data-level="provinsi" onClick={() => changeLevel('provinsi')} className={`relative z-10 flex-1 px-4 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'provinsi' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                                    <button data-level="provinsi" onClick={() => changeLevel('provinsi')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'provinsi' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
                                         <Landmark size={16}/> Provinsi
                                     </button>
                                 </div>
@@ -849,16 +850,18 @@ const Dashboard = () => {
                     )}
                     
                     <div className={`card transition-all duration-300 ease-in-out ${isFullScreen ? 'fixed inset-0 z-[10000] rounded-none' : 'animate-fade-in-up delay-200'}`}>
-                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
+                        {/* --- PERUBAHAN DIMULAI DI SINI: Penyesuaian Responsif untuk Bar Filter Peta --- */}
+                        <div className="flex flex-col lg:flex-row justify-between lg:items-center mb-6 gap-4">
                             <h2 className="text-2xl font-bold text-gray-900 whitespace-nowrap flex-shrink-0">Peta Interaktif</h2>
-                            <div className="flex w-full items-center justify-end gap-3 flex-nowrap">
+                            <div className="flex w-full flex-col md:flex-row items-stretch md:items-center justify-end gap-3">
+                        {/* --- PERUBAHAN SELESAI DI SINI --- */}
                                 <CustomMultiSelect options={categoryOptions} selectedValues={selectedCategories} onChange={setSelectedCategories} placeholder="Pilih Kategori/Rentang..." allSelectedText="Semua Kategori" isCustomMode={true} isCustomRangeActive={isCustomRangeActive} setIsCustomRangeActive={setIsCustomRangeActive} customRange={customRange} setCustomRange={setCustomRange} />
                                 {activeLevel === 'kecamatan' && (
                                     <>
                                         <CustomMultiSelect options={kabupatenOptions} selectedValues={selectedKabupaten} onChange={setSelectedKabupaten} placeholder="Pilih Kabupaten/Kota..." allSelectedText="Semua Kabupaten/Kota" />
                                         <button
                                             onClick={handleDownloadData}
-                                            className="p-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg"
+                                            className="p-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg flex-shrink-0"
                                             title="Unduh Data Estimasi Kecamatan"
                                         >
                                             <Download size={18} />
@@ -890,12 +893,12 @@ const Dashboard = () => {
                             </div>
                         </div>
                          <div className="text-right text-xs text-gray-500 mt-2 pr-1">
-                             Sumber Data: {
-                                  activeLevel === 'kecamatan'
-                                       ? 'Hasil Pemodelan Small Area Estimation (SAE)'
-                                       : 'Survei Kesehatan Indonesia (SKI) 2023'
+                            Sumber Data: {
+                                activeLevel === 'kecamatan'
+                                    ? 'Hasil Pemodelan Small Area Estimation (SAE)'
+                                    : 'Survei Kesehatan Indonesia (SKI) 2023'
                              }
-                         </div>
+                        </div>
                     </div>
                 </div>
                 </div>

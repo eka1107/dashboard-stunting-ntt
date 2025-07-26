@@ -12,7 +12,7 @@ const Home = () => {
   const stats = [
     {
       icon: TrendingUp,
-      value: '37.8%',
+      value: '37.9%',
       label: 'Prevalensi Stunting',
       description: 'Angka stunting di NTT tahun 2023',
       color: 'text-red-600',
@@ -28,9 +28,9 @@ const Home = () => {
     },
     {
       icon: Users,
-      value: '5.4M',
+      value: '5.61M',
       label: 'Penduduk',
-      description: 'Total populasi NTT',
+      description: 'Jumlah Penduduk NTT',
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
@@ -95,20 +95,20 @@ const Home = () => {
           >
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               <span className="bg-gradient-to-r from-red-600 via-red-600 to-orange-500 bg-clip-text text-transparent">
-                Stunting di Nusa Tenggara Timur
+                Dashboard Prevalensi Stunting
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Platform visualisasi data stunting yang komprehensif untuk memahami dan mengatasi 
-              masalah gizi kronis di Provinsi Nusa Tenggara Timur.
+              Dashboard visualiasi data prevalensi stunting untuk mendukung kebijakan yang berbasis data dan tepat sasaran
+              di Provinsi Nusa Tenggara Timur
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/story" className="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-8 rounded-lg transition-colors duration-200 text-lg shadow-sm hover:shadow-md">
-                Mulai Jelajahi
-              </Link>
-              <Link to="/dashboard" className="btn-secondary text-lg px-8 py-3">
+              <Link to="/dashboard" className="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-8 rounded-lg transition-colors duration-200 text-lg shadow-sm hover:shadow-md">
                 Lihat Dashboard
               </Link>
+              {/* <Link to="/dashboard" className="btn-secondary text-lg px-8 py-3">
+                Lihat Dashboard
+              </Link> */}
             </div>
           </motion.div>
         </div>
@@ -156,10 +156,10 @@ const Home = () => {
             {/* Left side: Concise Feature Description */}
             <div className="text-center lg:text-left">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Platform Terpadu Stunting NTT
+                Dashboard Terpadu Prevalensi Stunting
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                Jelajahi data stunting NTT melalui tiga fitur utama: <strong>Web Story</strong> interaktif, <strong>Dashboard</strong> analitik, dan visualisasi data presisi tinggi level kecamatan (2023) menggunakan metode <strong>SAE</strong> <i>(Small Area Estimation)</i>.
+                Jelajahi data prevalensi stunting dengan metode <strong>Small Area Estimation</strong> di Provinsi Nusa Tenggara Timur melalui tampilan yang dashboard interaktif dan inovatif
               </p>
               <Link to="/dashboard" className="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 text-base shadow-sm hover:shadow-md">
                 Buka Dashboard

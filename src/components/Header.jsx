@@ -10,7 +10,7 @@ const Header = () => {
 
   const navItems = [
     { path: '/', label: 'Beranda', icon: Home },
-    { path: '/story', label: 'Web Story', icon: BookOpen }, 
+    // { path: '/story', label: 'Web Story', icon: BookOpen }, 
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   ];
 
@@ -50,7 +50,7 @@ const Header = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-lg font-bold text-gray-900 leading-tight block">
-                    Dashboard Stunting
+                    Dashboard Prevalensi Stunting
                   </span>
                   <span className="text-sm text-gray-600 leading-tight block">
                     Provinsi Nusa Tenggara Timur

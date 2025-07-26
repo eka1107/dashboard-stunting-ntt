@@ -53,12 +53,12 @@ const categoryOptions = [
 ];
 
 const stuntingFacts = [
-    { icon: <Award size={14} />, text: "NTT menempati peringkat ke-2 provinsi dengan prevalensi stunting tertinggi di Indonesia pada 2023.", color: "text-red-600" },
-    { icon: <TrendingUp size={14} />, text: "Angka prevalensi stunting NTT tahun 2023 (37.9%) naik dari tahun 2022 (35.3%).", color: "text-red-600" },
-    { icon: <Target size={14} />, text: "Target prevalensi stunting nasional pada tahun 2024 adalah turun hingga 14%.", color: "text-blue-600" },
-    { icon: <Globe size={14} />, text: "Kabupaten Timor Tengah Selatan dan Sumba Barat Daya tercatat memiliki prevalensi tertinggi di NTT.", color: "text-orange-600" },
-    { icon: <Info size={14} />, text: "Stunting disebabkan oleh kekurangan gizi kronis dalam 1.000 Hari Pertama Kehidupan (HPK).", color: "text-gray-600" },
-    { icon: <Check size={14} />, text: "Intervensi gizi spesifik dan sensitif adalah strategi kunci untuk percepatan penurunan stunting.", color: "text-green-600" }
+    { icon: <Award size={14} />, text: "NTT menempati peringkat ke-2 provinsi dengan prevalensi stunting tertinggi di Indonesia pada 2023", color: "text-red-600" },
+    { icon: <TrendingUp size={14} />, text: "Angka prevalensi stunting NTT tahun 2023 (37.9%) naik dari tahun 2022 (35.3%)", color: "text-red-600" },
+    { icon: <Target size={14} />, text: "Target prevalensi stunting nasional pada tahun 2024 adalah turun hingga 14%", color: "text-red-600" },
+    { icon: <Globe size={14} />, text: "Kabupaten Timor Tengah Selatan dan Sumba Barat Daya tercatat memiliki prevalensi tertinggi di NTT", color: "text-red-600" },
+    { icon: <Info size={14} />, text: "Stunting disebabkan oleh kekurangan gizi kronis dalam 1.000 Hari Pertama Kehidupan (HPK)", color: "text-red-600" },
+    { icon: <Check size={14} />, text: "Intervensi gizi spesifik dan sensitif adalah strategi kunci untuk percepatan penurunan stunting", color: "text-red-600" }
 ];
 
 const infoSlides = [
@@ -70,7 +70,7 @@ const infoSlides = [
             { text: 'penurunan stunting', bold: true },
             ' dan wasting pada balita.',
         ],
-        image: 'src//assets//sgds.png',
+        image: '/assets/sgds.png',
         color: 'green'
     },
     {
@@ -85,7 +85,7 @@ const infoSlides = [
             { text: '14%', bold: true },
             ' pada tahun 2024 sebagai salah satu prioritas nasional dalam Rencana Pembangunan Jangka Menengah Nasional.',
         ],
-        image: 'src//assets//rpjmn.png',
+        image: '/assets/rpjmn.png',
         color: 'blue'
     }
 ];

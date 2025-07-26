@@ -270,7 +270,7 @@ const Dashboard = () => {
                 break;
         }
 
-        fetch(`/src/data/${geojsonPath}`)
+        fetch(`/data/${geojsonPath}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Gagal memuat ${geojsonPath}: ${response.statusText}`);

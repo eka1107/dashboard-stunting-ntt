@@ -43,7 +43,7 @@ const Header = () => {
               <Link to="/" className="flex items-center space-x-3">
                 <div className="w-12 h-12 flex items-center justify-center">
                   <img 
-                    src="/src/logo-ntt.png"
+                    src="/logo-ntt.png"
                     alt="Logo Provinsi Nusa Tenggara Timur"
                     className="w-12 h-12 object-contain"
                   />

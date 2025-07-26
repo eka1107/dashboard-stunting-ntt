@@ -159,7 +159,7 @@ const Home = () => {
                 Dashboard Terpadu Prevalensi Stunting
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                Jelajahi data prevalensi stunting dengan metode <strong>Small Area Estimation</strong> di Provinsi Nusa Tenggara Timur melalui tampilan yang dashboard interaktif dan inovatif
+                Jelajahi data prevalensi stunting hasil pemodelan <strong>Small Area Estimation</strong> di Provinsi Nusa Tenggara Timur melalui tampilan yang dashboard interaktif dan inovatif
               </p>
               <Link to="/dashboard" className="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 text-base shadow-sm hover:shadow-md">
                 Buka Dashboard

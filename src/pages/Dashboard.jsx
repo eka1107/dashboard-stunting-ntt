@@ -877,9 +877,6 @@ const Dashboard = () => {
                                     <div className="h-px bg-gray-200 mx-1" />
                                     <button onClick={handleResetView} title="Reset Tampilan" className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105"><Expand size={18} /></button>
                                     <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105">{isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
-                                    <button onClick={handleDownloadMap} disabled={isDownloadingMap} title="Unduh Peta" className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-wait">
-                                        {isDownloadingMap ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-                                    </button>
                                 </div>
                             </div>
                             <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200 max-w-xs z-[1000] animate-fade-in-right delay-400">

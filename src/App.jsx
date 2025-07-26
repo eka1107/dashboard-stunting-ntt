@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
-import WebStory from './pages/WebStory';
 import Dashboard from './pages/Dashboard';
 // import ThematicMap from './pages/ThematicMap';
 import './App.css';
@@ -14,7 +13,6 @@ function App() {
         <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
-            <Route path="/story" element={<WebStory />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
         </main>

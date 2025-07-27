@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-// Menambahkan ikon yang relevan
-import { Sun, Moon, Satellite, Expand, Maximize, Minimize, ChevronDown, Check, Target, PieChart, ArrowUpCircle, ArrowDownCircle, TrendingUp, Globe, Info, Award, ArrowLeft, ChevronUp, Map, Building, Landmark, AlertTriangle, Download, Camera, Loader2, Search, X } from 'lucide-react';
+import { Sun, Moon, Satellite, Expand, Maximize, Minimize, ChevronDown, Check, Target, PieChart, ArrowUpCircle, ArrowDownCircle, TrendingUp, Globe, Info, Award, ArrowLeft, ChevronUp, Map, Building, Landmark, AlertTriangle, Download, Search, X } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-// DIHAPUS: Import html2canvas yang menyebabkan error
-// import html2canvas from 'html2canvas';
 
 // --- CUSTOM HOOK UNTUK ANIMASI ANGKA ---
 const useCountUp = (end, duration = 1500, start = 0) => {
@@ -144,10 +141,14 @@ const CustomMultiSelect = ({
         }).join(', ');
     };
     return (
-        // --- PERUBAHAN DIMULAI DI SINI: Penyesuaian Responsif untuk CustomMultiSelect ---
-        <div className="relative w-full" ref={dropdownRef}>
-        {/* --- PERUBAHAN SELESAI DI SINI --- */}
-            <button type="button" disabled={disabled} className="w-full bg-gray-100 border-gray-300 rounded-lg text-sm px-4 py-2 text-left flex items-center justify-between disabled:bg-gray-200 disabled:cursor-not-allowed">
+        // --- PERUBAHAN FINAL ADA DI SINI ---
+        <div className="relative w-56" ref={dropdownRef}>
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                className="w-full bg-gray-100 border-gray-300 rounded-lg text-sm px-4 py-2 text-left flex items-center justify-between disabled:bg-gray-200 disabled:cursor-not-allowed"
+            >
                 <span className="truncate">{getDisplayText()}</span>
                 <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -214,19 +215,18 @@ const Dashboard = () => {
     const [infoSlideIndex, setInfoSlideIndex] = useState(0);
     const [sliderStyle, setSliderStyle] = useState({});
     const levelButtonsRef = useRef(null);
-    const [isDownloadingMap, setIsDownloadingMap] = useState(false);
     const [provincialRankingData, setProvincialRankingData] = useState([]);
 
     const filteredFeatures = useMemo(() => {
         if (!geojsonData) return [];
         return geojsonData.features.filter(feature => {
             const { prevalence, kdkab } = feature.properties;
-            const kabupatenMatch = activeLevel === 'kecamatan' ? selectedKabupaten.includes(kdkab) : true;
+            const kabupatenMatch = activeLevel === 'kecamatan' ? (selectedKabupaten.length === 0 || selectedKabupaten.includes(kdkab)) : true;
             if (!kabupatenMatch) return false;
 
             if (isCustomRangeActive) {
-                const min = customRange.min || 0;
-                const max = customRange.max || 100;
+                const min = customRange.min === '' || isNaN(customRange.min) ? 0 : customRange.min;
+                const max = customRange.max === '' || isNaN(customRange.max) ? 100 : customRange.max;
                 return prevalence >= min && prevalence <= max;
             }
             return selectedCategories.includes(getCategory(prevalence).name);
@@ -237,10 +237,10 @@ const Dashboard = () => {
         if (activeLevel === 'provinsi') {
             return {
                 title: 'Prevalensi Stunting Indonesia',
-                value: 21.5 
+                value: 21.5
             };
         }
-        
+
         return {
             title: 'Prevalensi Stunting Provinsi NTT',
             value: 37.9
@@ -249,7 +249,7 @@ const Dashboard = () => {
     }, [activeLevel, filteredFeatures]);
 
     const animatedPrevalence = useCountUp(mainStat.value);
-    
+
     const animatedSangatTinggi = useCountUp(stats.counts.sangatTinggi || 0);
     const animatedTinggi = useCountUp(stats.counts.tinggi || 0);
     const animatedSedang = useCountUp(stats.counts.sedang || 0);
@@ -297,7 +297,7 @@ const Dashboard = () => {
                             default:
                                 prevalence = 0;
                         }
-                        
+
                         const rse = f.properties['Data_RSE K'] || 0;
 
                         return {
@@ -328,7 +328,7 @@ const Dashboard = () => {
                     const sortedKabupatens = uniqueKabupatens.sort((a, b) => a.kdkab.localeCompare(b.kdkab));
                     setKabupatenOptions(sortedKabupatens.map(k => ({ value: k.kdkab, label: `${k.kdkab} ${k.nmkab}` })));
                     if (selectedKabupaten.length === 0) {
-                       setSelectedKabupaten(sortedKabupatens.map(k => k.kdkab));
+                        setSelectedKabupaten(sortedKabupatens.map(k => k.kdkab));
                     }
                 }
             })
@@ -346,7 +346,7 @@ const Dashboard = () => {
         }
 
         let newStats = { counts: { sangatTinggi: 0, tinggi: 0, sedang: 0, rendah: 0 }, highest: [], lowest: [] };
-        
+
         const allItems = filteredFeatures.map(f => f.properties);
 
         allItems.forEach(f => {
@@ -356,10 +356,10 @@ const Dashboard = () => {
             else if (category === 'Sedang') newStats.counts.sedang++;
             else newStats.counts.rendah++;
         });
-        
+
         newStats.highest = [...allItems].sort((a, b) => b.prevalence - a.prevalence).slice(0, 10);
         newStats.lowest = [...allItems].sort((a, b) => a.prevalence - b.prevalence).slice(0, 10);
-        
+
         setStats(newStats);
     }, [filteredFeatures, activeLevel]);
 
@@ -389,7 +389,7 @@ const Dashboard = () => {
             mapInstanceRef.current = L.map(mapRef.current, { zoomControl: false }).setView([-9.5, 122], 7);
             L.control.zoom({ position: 'topright' }).addTo(mapInstanceRef.current);
             mapInstanceRef.current.on('click', resetHighlight);
-            
+
             const style = document.createElement('style');
             style.textContent = `
                 .modern-popup .leaflet-popup-content-wrapper { background: transparent !important; border-radius: 12px !important; padding: 0 !important; box-shadow: none !important; } 
@@ -423,7 +423,7 @@ const Dashboard = () => {
             document.head.appendChild(style);
         }
     }, []);
-    
+
     useEffect(() => {
         if (mapInstanceRef.current) {
             if (tileLayerRef.current) mapInstanceRef.current.removeLayer(tileLayerRef.current);
@@ -449,9 +449,9 @@ const Dashboard = () => {
                 if (activeLevel === 'provinsi' && feature.properties.PROVINSI === 'Nusa Tenggara Timur') {
                     return {
                         ...baseStyle,
-                        weight: 4, 
-                        color: '#3b82f6', 
-                        fillOpacity: 0.85, 
+                        weight: 4,
+                        color: '#3b82f6',
+                        fillOpacity: 0.85,
                     };
                 }
 
@@ -462,7 +462,7 @@ const Dashboard = () => {
                 const estimasi = props.prevalence;
                 const category = getCategory(estimasi);
                 const getLighterColor = (color) => { const colors = { '#dc2626': '#f87171', '#f97316': '#fb923c', '#eab308': '#facc15', '#16a34a': '#4ade80' }; return colors[color] || color; };
-                
+
                 let title, subtitle;
                 if (activeLevel === 'kecamatan') {
                     title = props.nmkec;
@@ -512,22 +512,22 @@ const Dashboard = () => {
                     </div>
                 `;
                 layer.bindPopup(popupContent, { className: 'modern-popup', closeButton: false, autoPan: false, offset: L.point(0, -5) });
-                
+
                 layer.on({
-                    mouseover: (e) => { 
-                        if (e.target !== highlightedLayerRef.current) { 
-                            e.target.setStyle({ weight: 3, color: activeBasemap === 'dark' ? '#ffffff' : '#1f2937', fillOpacity: 0.9 }); 
-                            e.target.bringToFront(); 
-                        } 
-                        e.target.openPopup(); 
+                    mouseover: (e) => {
+                        if (e.target !== highlightedLayerRef.current) {
+                            e.target.setStyle({ weight: 3, color: activeBasemap === 'dark' ? '#ffffff' : '#1f2937', fillOpacity: 0.9 });
+                            e.target.bringToFront();
+                        }
+                        e.target.openPopup();
                     },
-                    mouseout: (e) => { 
-                        if (e.target !== highlightedLayerRef.current) { 
-                            geoJsonLayerRef.current.resetStyle(layer); 
-                        } 
-                        layer.closePopup(); 
+                    mouseout: (e) => {
+                        if (e.target !== highlightedLayerRef.current) {
+                            geoJsonLayerRef.current.resetStyle(layer);
+                        }
+                        layer.closePopup();
                     },
-                    click: (e) => { L.DomEvent.stopPropagation(e); resetHighlight(); if(activeLevel === 'kecamatan') setSelectedKabupaten([e.target.feature.properties.kdkab]); }
+                    click: (e) => { L.DomEvent.stopPropagation(e); resetHighlight(); if (activeLevel === 'kecamatan') setSelectedKabupaten([e.target.feature.properties.kdkab]); }
                 });
             },
         }).addTo(mapInstanceRef.current);
@@ -550,7 +550,7 @@ const Dashboard = () => {
         }
         return () => window.removeEventListener('keydown', handleEscKey);
     }, [isFullScreen]);
-    
+
     useEffect(() => {
         const container = levelButtonsRef.current;
         if (!container) return;
@@ -604,7 +604,7 @@ const Dashboard = () => {
             setHighlightedFeature(featureData[findKey]);
         }
     };
-    
+
     const changeLevel = (level) => {
         setActiveLevel(level);
         handleResetView();
@@ -632,40 +632,6 @@ const Dashboard = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
-
-    const handleDownloadMap = async () => {
-        const mapElement = mapRef.current;
-        if (!mapElement || typeof html2canvas === 'undefined') {
-            console.error("html2canvas is not loaded or map element not found.");
-            return;
-        }
-
-        setIsDownloadingMap(true);
-
-        try {
-            const controlsToHide = mapElement.querySelectorAll('.leaflet-control-zoom, .leaflet-control-container > .leaflet-top.leaflet-left, .leaflet-control-attribution');
-            controlsToHide.forEach(el => el.style.visibility = 'hidden');
-
-            const canvas = await html2canvas(mapElement, {
-                useCORS: true,
-                logging: false,
-                allowTaint: true,
-                backgroundColor: null
-            });
-            
-            const image = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `peta-stunting-${activeLevel}.png`;
-            link.href = image;
-            link.click();
-            
-            controlsToHide.forEach(el => el.style.visibility = 'visible');
-        } catch (err) {
-            console.error("Error capturing map:", err);
-        } finally {
-            setIsDownloadingMap(false);
-        }
     };
 
     const levelName = {
@@ -712,195 +678,208 @@ const Dashboard = () => {
 
             <div className={`min-h-screen bg-pattern relative ${activeBasemap === 'dark' ? 'dark' : ''}`}>
                 <div className="relative z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-                    {!isFullScreen && (
-                        <>
-                            <div className="text-center space-y-4 animate-fade-in-down">
-                                <h1 className="text-4xl md:text-5xl font-bold text-gray-900"><span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Dashboard Prevalensi Stunting</span></h1>
-                                <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">Level {levelName[activeLevel]} di Nusa Tenggara Timur tahun 2023</p>
-                                
-                                {/* --- PERUBAHAN DIMULAI DI SINI: Penyesuaian Responsif untuk Level Switcher --- */}
-                                <div ref={levelButtonsRef} className="relative flex justify-center items-center bg-gray-100 p-1 rounded-xl w-full max-w-sm sm:max-w-md mx-auto shadow-inner">
-                                {/* --- PERUBAHAN SELESAI DI SINI --- */}
-                                    <div
-                                        className="absolute left-0 h-[85%] bg-gradient-to-r from-red-500 to-orange-500 rounded-lg shadow-md transition-all duration-300 ease-in-out"
-                                        style={sliderStyle}
-                                    ></div>
-                                    <button data-level="kecamatan" onClick={() => changeLevel('kecamatan')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kecamatan' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
-                                        <Map size={16}/> Kecamatan
-                                    </button>
-                                    <button data-level="kabupaten" onClick={() => changeLevel('kabupaten')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kabupaten' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
-                                        <Building size={16}/> Kabupaten/Kota
-                                    </button>
-                                    <button data-level="provinsi" onClick={() => changeLevel('provinsi')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'provinsi' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
-                                        <Landmark size={16}/> Provinsi
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div className="card animate-fade-in-up delay-100 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-40 opacity-15 pointer-events-none">
-                                    {/* SVG Pattern */}
-                                </div>
-                                <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsStatsVisible(!isStatsVisible)}>
-                                    <h2 className="text-2xl font-bold text-gray-900">Statistik Prevalensi Stunting</h2>
-                                    <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors" aria-expanded={isStatsVisible} aria-controls="stats-content">
-                                        <span className="sr-only">Buka atau tutup statistik</span>
-                                        {isStatsVisible ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-                                    </button>
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+                        {!isFullScreen && (
+                            <>
+                                <div className="text-center space-y-4 animate-fade-in-down">
+                                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900"><span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Dashboard Prevalensi Stunting</span></h1>
+                                    <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">Level {levelName[activeLevel]} di Nusa Tenggara Timur tahun 2023</p>
+
+                                    <div ref={levelButtonsRef} className="relative flex justify-center items-center bg-gray-100 p-1 rounded-xl w-full max-w-sm sm:max-w-md mx-auto shadow-inner">
+                                        <div
+                                            className="absolute left-0 h-[85%] bg-gradient-to-r from-red-500 to-orange-500 rounded-lg shadow-md transition-all duration-300 ease-in-out"
+                                            style={sliderStyle}
+                                        ></div>
+                                        <button data-level="kecamatan" onClick={() => changeLevel('kecamatan')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kecamatan' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                                            <Map size={16} /> Kecamatan
+                                        </button>
+                                        <button data-level="kabupaten" onClick={() => changeLevel('kabupaten')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'kabupaten' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                                            <Building size={16} /> Kabupaten/Kota
+                                        </button>
+                                        <button data-level="provinsi" onClick={() => changeLevel('provinsi')} className={`relative z-10 flex-1 px-3 py-2 text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${activeLevel === 'provinsi' ? 'text-white' : 'text-gray-600 hover:text-gray-800'}`}>
+                                            <Landmark size={16} /> Provinsi
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div id="stats-content" className={`transition-all duration-500 ease-in-out overflow-hidden ${isStatsVisible ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'}`}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        <div className="p-4 rounded-xl bg-red-50 border border-red-100 animate-fade-in-up delay-200 transition-all duration-300 hover:shadow-md flex flex-col">
-                                            <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-red-100"><Target className="w-5 h-5 text-red-600" /></div><h3 className="text-sm font-semibold text-red-700">{mainStat.title}</h3></div>
-                                            <div className="text-5xl font-bold text-red-600 mb-2">{animatedPrevalence.toFixed(1)}<span className="text-xl">%</span></div>
-                                            <div className="mt-auto space-y-2">
-                                                <div className="min-h-[40px]">
-                                                    <div className={`fact-carousel ${isFactFading ? 'fading' : ''}`}>
-                                                        <div className={`flex items-start gap-2 text-xs font-medium ${stuntingFacts[currentFactIndex].color}`}>
-                                                            <div className="flex-shrink-0 mt-0.5">{stuntingFacts[currentFactIndex].icon}</div>
-                                                            <span>{stuntingFacts[currentFactIndex].text}</span>
+                                <div className="card animate-fade-in-up delay-100 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-64 h-40 opacity-15 pointer-events-none">
+                                        {/* SVG Pattern */}
+                                    </div>
+                                    <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsStatsVisible(!isStatsVisible)}>
+                                        <h2 className="text-2xl font-bold text-gray-900">Statistik Prevalensi Stunting</h2>
+                                        <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors" aria-expanded={isStatsVisible} aria-controls="stats-content">
+                                            <span className="sr-only">Buka atau tutup statistik</span>
+                                            {isStatsVisible ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                                        </button>
+                                    </div>
+
+                                    <div id="stats-content" className={`transition-all duration-500 ease-in-out overflow-hidden ${isStatsVisible ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'}`}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                            <div className="p-4 rounded-xl bg-red-50 border border-red-100 animate-fade-in-up delay-200 transition-all duration-300 hover:shadow-md flex flex-col">
+                                                <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-red-100"><Target className="w-5 h-5 text-red-600" /></div><h3 className="text-sm font-semibold text-red-700">{mainStat.title}</h3></div>
+                                                <div className="text-5xl font-bold text-red-600 mb-2">{animatedPrevalence.toFixed(1)}<span className="text-xl">%</span></div>
+                                                <div className="mt-auto space-y-2">
+                                                    <div className="min-h-[40px]">
+                                                        <div className={`fact-carousel ${isFactFading ? 'fading' : ''}`}>
+                                                            <div className={`flex items-start gap-2 text-xs font-medium ${stuntingFacts[currentFactIndex].color}`}>
+                                                                <div className="flex-shrink-0 mt-0.5">{stuntingFacts[currentFactIndex].icon}</div>
+                                                                <span>{stuntingFacts[currentFactIndex].text}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="flex justify-center items-center gap-1.5 pt-1">
-                                                    {stuntingFacts.map((_, index) => (
-                                                        <div key={index} className={`h-1.5 rounded-full transition-all duration-300 ${index === currentFactIndex ? 'w-4 bg-red-500' : 'w-1.5 bg-red-200'}`}></div>
-                                                    ))}
+                                                    <div className="flex justify-center items-center gap-1.5 pt-1">
+                                                        {stuntingFacts.map((_, index) => (
+                                                            <div key={index} className={`h-1.5 rounded-full transition-all duration-300 ${index === currentFactIndex ? 'w-4 bg-red-500' : 'w-1.5 bg-red-200'}`}></div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {activeLevel !== 'provinsi' ? (
-                                            <>
-                                                <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md">
-                                                    <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-blue-100"><PieChart className="w-5 h-5 text-blue-600" /></div><h3 className="text-sm font-semibold text-blue-700">Sebaran {levelName[activeLevel]}</h3></div>
-                                                    <div className="space-y-3 text-sm"><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span><span className="text-gray-700">Sangat Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedSangatTinggi)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-orange-500 mr-2"></span><span className="text-gray-700">Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedTinggi)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span><span className="text-gray-700">Sedang</span></span><span className="font-bold text-gray-900">{Math.round(animatedSedang)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span><span className="text-gray-700">Rendah</span></span><span className="font-bold text-gray-900">{Math.round(animatedRendah)}</span></div></div>
-                                                </div>
-                                                <div className={`p-4 rounded-xl bg-orange-50 border border-orange-100 animate-fade-in-up delay-400 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.highest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
-                                                    <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-orange-100"><ArrowUpCircle className="w-5 h-5 text-orange-600" /></div><h3 className="text-sm font-semibold text-orange-700">{levelName[activeLevel]} Tertinggi</h3></div><div className={`transition-opacity duration-300 ${showTopHighest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideHighest} className="text-xs font-semibold flex items-center text-orange-600 hover:text-orange-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
-                                                    <div className="card-content-wrapper">{stats.highest.length > 0 ? (<><div className={`card-content ${isHighestFading || showTopHighest ? 'fading' : ''} ${!isHighestFading && !showTopHighest ? 'entering' : 'pointer-events-none'}`}><p className="text-base font-bold text-gray-900 leading-tight truncate mb-1">{stats.highest[0].nmkec || stats.highest[0].KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-xs text-gray-600 mb-3 truncate">Kab. {stats.highest[0].nmkab}</p>}<p className="text-2xl font-bold text-orange-600 mb-2">{animatedHighestValue.toFixed(1)}%</p><button onClick={handleShowHighest} className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline">Lihat Selengkapnya →</button></div><div className={`absolute top-0 left-0 w-full card-content ${isHighestFading || !showTopHighest ? 'fading' : ''} ${!isHighestFading && showTopHighest ? 'entering' : 'pointer-events-none'}`}>
-                                                        <div className="space-y-1 text-xs scrollable-list">{stats.highest.map((item, index) => (
-                                                            <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-orange-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
-                                                                <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
-                                                                <p className="font-bold text-orange-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
-                                                            </div>
-                                                        ))}</div>
-                                                    </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
-                                                </div>
-                                                <div className={`p-4 rounded-xl bg-green-50 border border-green-100 animate-fade-in-up delay-500 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.lowest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
-                                                    <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-green-100"><ArrowDownCircle className="w-5 h-5 text-green-600" /></div><h3 className="text-sm font-semibold text-green-700">{levelName[activeLevel]} Terendah</h3></div><div className={`transition-opacity duration-300 ${showTopLowest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideLowest} className="text-xs font-semibold flex items-center text-green-600 hover:text-green-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
-                                                    <div className="card-content-wrapper">{stats.lowest.length > 0 ? (<><div className={`card-content ${isLowestFading || showTopLowest ? 'fading' : ''} ${!isLowestFading && !showTopLowest ? 'entering' : 'pointer-events-none'}`}><p className="text-base font-bold text-gray-900 leading-tight truncate mb-1">{stats.lowest[0].nmkec || stats.lowest[0].KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-xs text-gray-600 mb-3 truncate">Kab. {stats.lowest[0].nmkab}</p>}<p className="text-2xl font-bold text-green-600 mb-2">{animatedLowestValue.toFixed(1)}%</p><button onClick={handleShowLowest} className="text-xs font-medium text-green-600 hover:text-green-700 hover:underline">Lihat Selengkapnya →</button></div><div className={`absolute top-0 left-0 w-full card-content ${isLowestFading || !showTopLowest ? 'fading' : ''} ${!isLowestFading && showTopLowest ? 'entering' : 'pointer-events-none'}`}>
-                                                        <div className="space-y-1 text-xs scrollable-list">{stats.lowest.map((item, index) => (
-                                                            <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-green-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
-                                                                <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
-                                                                <p className="font-bold text-green-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
-                                                            </div>
-                                                        ))}</div>
-                                                    </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md flex flex-col">
-                                                    <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-blue-100"><Award className="w-5 h-5 text-blue-600" /></div><h3 className="text-sm font-semibold text-blue-700">Prevalensi Per Provinsi</h3></div>
-                                                    <div className="space-y-1 text-xs scrollable-list flex-grow">
-                                                        {provincialRankingData.map((item) => (
-                                                            <div key={item.rank} className={`flex items-center justify-between p-1.5 rounded-md ${item.province === 'Nusa Tenggara Timur' ? 'bg-blue-100' : ''}`}>
-                                                                <div className="flex items-center min-w-0">
-                                                                    <span className={`rank-circle mr-3 ${item.province === 'Nusa Tenggara Timur' ? 'bg-blue-600 text-white' : ''}`}>{item.rank}</span>
-                                                                    <span className={`font-medium text-gray-800 truncate`}>{item.province}</span>
+                                            {activeLevel !== 'provinsi' ? (
+                                                <>
+                                                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md">
+                                                        <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-blue-100"><PieChart className="w-5 h-5 text-blue-600" /></div><h3 className="text-sm font-semibold text-blue-700">Sebaran {levelName[activeLevel]}</h3></div>
+                                                        <div className="space-y-3 text-sm"><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span><span className="text-gray-700">Sangat Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedSangatTinggi)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-orange-500 mr-2"></span><span className="text-gray-700">Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedTinggi)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span><span className="text-gray-700">Sedang</span></span><span className="font-bold text-gray-900">{Math.round(animatedSedang)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span><span className="text-gray-700">Rendah</span></span><span className="font-bold text-gray-900">{Math.round(animatedRendah)}</span></div></div>
+                                                    </div>
+                                                    <div className={`p-4 rounded-xl bg-orange-50 border border-orange-100 animate-fade-in-up delay-400 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.highest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
+                                                        <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-orange-100"><ArrowUpCircle className="w-5 h-5 text-orange-600" /></div><h3 className="text-sm font-semibold text-orange-700">{levelName[activeLevel]} Tertinggi</h3></div><div className={`transition-opacity duration-300 ${showTopHighest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideHighest} className="text-xs font-semibold flex items-center text-orange-600 hover:text-orange-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
+                                                        <div className="card-content-wrapper">{stats.highest.length > 0 ? (<><div className={`card-content ${isHighestFading || showTopHighest ? 'fading' : ''} ${!isHighestFading && !showTopHighest ? 'entering' : 'pointer-events-none'}`}><p className="text-base font-bold text-gray-900 leading-tight truncate mb-1">{stats.highest[0].nmkec || stats.highest[0].KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-xs text-gray-600 mb-3 truncate">Kab. {stats.highest[0].nmkab}</p>}<p className="text-2xl font-bold text-orange-600 mb-2">{animatedHighestValue.toFixed(1)}%</p><button onClick={handleShowHighest} className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline">Lihat Selengkapnya →</button></div><div className={`absolute top-0 left-0 w-full card-content ${isHighestFading || !showTopHighest ? 'fading' : ''} ${!isHighestFading && showTopHighest ? 'entering' : 'pointer-events-none'}`}>
+                                                            <div className="space-y-1 text-xs scrollable-list">{stats.highest.map((item, index) => (
+                                                                <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-orange-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
+                                                                    <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
+                                                                    <p className="font-bold text-orange-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
                                                                 </div>
-                                                                <span className="font-bold text-gray-900 ml-2">{item.prevalence.toFixed(1)}%</span>
-                                                            </div>
-                                                        ))}
+                                                            ))}</div>
+                                                        </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
                                                     </div>
-                                                </div>
-                                                <div className={`p-4 rounded-xl animate-fade-in-up delay-400 transition-all duration-500 hover:shadow-md lg:col-span-2 flex flex-col relative overflow-hidden ${currentSlideTheme === 'green' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-                                                    <div className="flex-grow flex items-center transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${infoSlideIndex * 100}%)` }}>
-                                                        {infoSlides.map((slide, index) => (
-                                                            <div key={index} className="w-full flex-shrink-0 flex flex-col md:flex-row items-center gap-6 px-2">
-                                                                <img src={slide.image} alt={`Logo ${slide.type}`} className="w-32 h-32 md:w-40 md:h-40 object-contain flex-shrink-0"/>
-                                                                <div className={slide.color === 'green' ? 'text-green-800' : 'text-blue-800'}>
-                                                                    <h3 className={`text-lg font-bold mb-2 ${slide.color === 'green' ? 'text-green-900' : 'text-blue-900'}`}>{slide.title}</h3>
-                                                                    <p className="text-sm font-medium">
-                                                                        {slide.textParts.map((part, i) => (
-                                                                            <span key={i} className={part.bold ? `font-bold ${slide.color === 'green' ? 'text-green-900' : 'text-blue-900'}` : ''}>
-                                                                                {part.text || part}
-                                                                            </span>
-                                                                        ))}
-                                                                    </p>
+                                                    <div className={`p-4 rounded-xl bg-green-50 border border-green-100 animate-fade-in-up delay-500 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.lowest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
+                                                        <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-green-100"><ArrowDownCircle className="w-5 h-5 text-green-600" /></div><h3 className="text-sm font-semibold text-green-700">{levelName[activeLevel]} Terendah</h3></div><div className={`transition-opacity duration-300 ${showTopLowest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideLowest} className="text-xs font-semibold flex items-center text-green-600 hover:text-green-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
+                                                        <div className="card-content-wrapper">{stats.lowest.length > 0 ? (<><div className={`card-content ${isLowestFading || showTopLowest ? 'fading' : ''} ${!isLowestFading && !showTopLowest ? 'entering' : 'pointer-events-none'}`}><p className="text-base font-bold text-gray-900 leading-tight truncate mb-1">{stats.lowest[0].nmkec || stats.lowest[0].KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-xs text-gray-600 mb-3 truncate">Kab. {stats.lowest[0].nmkab}</p>}<p className="text-2xl font-bold text-green-600 mb-2">{animatedLowestValue.toFixed(1)}%</p><button onClick={handleShowLowest} className="text-xs font-medium text-green-600 hover:text-green-700 hover:underline">Lihat Selengkapnya →</button></div><div className={`absolute top-0 left-0 w-full card-content ${isLowestFading || !showTopLowest ? 'fading' : ''} ${!isLowestFading && showTopLowest ? 'entering' : 'pointer-events-none'}`}>
+                                                            <div className="space-y-1 text-xs scrollable-list">{stats.lowest.map((item, index) => (
+                                                                <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-green-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
+                                                                    <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
+                                                                    <p className="font-bold text-green-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
                                                                 </div>
-                                                            </div>
-                                                        ))}
+                                                            ))}</div>
+                                                        </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
                                                     </div>
-                                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                                                        {infoSlides.map((_, index) => (
-                                                            <div key={index} onClick={() => setInfoSlideIndex(index)} className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${infoSlideIndex === index ? `w-4 ${currentSlideTheme === 'green' ? 'bg-green-500' : 'bg-blue-500'}` : `w-1.5 ${currentSlideTheme === 'green' ? 'bg-green-200' : 'bg-blue-200'}`}`}></div>
-                                                        ))}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md flex flex-col">
+                                                        <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-blue-100"><Award className="w-5 h-5 text-blue-600" /></div><h3 className="text-sm font-semibold text-blue-700">Prevalensi Per Provinsi</h3></div>
+                                                        <div className="space-y-1 text-xs scrollable-list flex-grow">
+                                                            {provincialRankingData.map((item) => (
+                                                                <div key={item.rank} className={`flex items-center justify-between p-1.5 rounded-md ${item.province === 'Nusa Tenggara Timur' ? 'bg-blue-100' : ''}`}>
+                                                                    <div className="flex items-center min-w-0">
+                                                                        <span className={`rank-circle mr-3 ${item.province === 'Nusa Tenggara Timur' ? 'bg-blue-600 text-white' : ''}`}>{item.rank}</span>
+                                                                        <span className={`font-medium text-gray-800 truncate`}>{item.province}</span>
+                                                                    </div>
+                                                                    <span className="font-bold text-gray-900 ml-2">{item.prevalence.toFixed(1)}%</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </>
-                                        )}
+                                                    <div className={`p-4 rounded-xl animate-fade-in-up delay-400 transition-all duration-500 hover:shadow-md lg:col-span-2 flex flex-col relative overflow-hidden ${currentSlideTheme === 'green' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+                                                        <div className="flex-grow flex items-center transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${infoSlideIndex * 100}%)` }}>
+                                                            {infoSlides.map((slide, index) => (
+                                                                <div key={index} className="w-full flex-shrink-0 flex flex-col md:flex-row items-center gap-6 px-2">
+                                                                    <img src={slide.image} alt={`Logo ${slide.type}`} className="w-32 h-32 md:w-40 md:h-40 object-contain flex-shrink-0" />
+                                                                    <div className={slide.color === 'green' ? 'text-green-800' : 'text-blue-800'}>
+                                                                        <h3 className={`text-lg font-bold mb-2 ${slide.color === 'green' ? 'text-green-900' : 'text-blue-900'}`}>{slide.title}</h3>
+                                                                        <p className="text-sm font-medium">
+                                                                            {slide.textParts.map((part, i) => (
+                                                                                <span key={i} className={part.bold ? `font-bold ${slide.color === 'green' ? 'text-green-900' : 'text-blue-900'}` : ''}>
+                                                                                    {part.text || part}
+                                                                                </span>
+                                                                            ))}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                                            {infoSlides.map((_, index) => (
+                                                                <div key={index} onClick={() => setInfoSlideIndex(index)} className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${infoSlideIndex === index ? `w-4 ${currentSlideTheme === 'green' ? 'bg-green-500' : 'bg-blue-500'}` : `w-1.5 ${currentSlideTheme === 'green' ? 'bg-green-200' : 'bg-blue-200'}`}`}></div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <div className={`card transition-all duration-300 ease-in-out ${isFullScreen ? 'fixed inset-0 z-[10000] rounded-none' : 'animate-fade-in-up delay-200'}`}>
+                            <div className="flex flex-col lg:flex-row justify-between lg:items-center mb-6 gap-4">
+                                <h2 className="text-2xl font-bold text-gray-900 whitespace-nowrap flex-shrink-0">Peta Interaktif</h2>
+                                <div className="flex w-full flex-col md:flex-row items-end md:items-center justify-end gap-3">
+                                    <CustomMultiSelect
+                                        options={categoryOptions}
+                                        selectedValues={selectedCategories}
+                                        onChange={setSelectedCategories}
+                                        placeholder="Pilih Kategori/Rentang..."
+                                        allSelectedText="Semua Kategori"
+                                        isCustomMode={true}
+                                        isCustomRangeActive={isCustomRangeActive}
+                                        setIsCustomRangeActive={setIsCustomRangeActive}
+                                        customRange={customRange}
+                                        setCustomRange={setCustomRange}
+                                    />
+                                    {activeLevel === 'kecamatan' && (
+                                        <>
+                                            <CustomMultiSelect
+                                                options={kabupatenOptions}
+                                                selectedValues={selectedKabupaten}
+                                                onChange={setSelectedKabupaten}
+                                                placeholder="Pilih Kabupaten/Kota..."
+                                                allSelectedText="Semua Kabupaten/Kota"
+                                            />
+                                            <button
+                                                onClick={handleDownloadData}
+                                                className="p-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg flex-shrink-0"
+                                                title="Unduh Data Estimasi Kecamatan"
+                                            >
+                                                <Download size={18} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <div ref={mapRef} className="w-full h-[600px] md:h-[700px] rounded-xl border border-gray-200 overflow-hidden shadow-sm" style={{ height: isFullScreen ? '100vh' : '600px' }} />
+                                <div className="absolute top-4 left-4 z-[1000] animate-fade-in-left delay-400">
+                                    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-2 flex flex-col gap-2">
+                                        <button onClick={() => setActiveBasemap('light')} title="Mode Terang" className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${activeBasemap === 'light' ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}><Sun size={18} /></button>
+                                        <button onClick={() => setActiveBasemap('dark')} title="Mode Gelap" className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${activeBasemap === 'dark' ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}><Moon size={18} /></button>
+                                        <button onClick={() => setActiveBasemap('satellite')} title="Mode Satelit" className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${activeBasemap === 'satellite' ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}><Satellite size={18} /></button>
+                                        <div className="h-px bg-gray-200 mx-1" />
+                                        <button onClick={handleResetView} title="Reset Tampilan" className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105"><Expand size={18} /></button>
+                                        <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105">{isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200 max-w-xs z-[1000] animate-fade-in-right delay-400">
+                                    <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center"><PieChart size={16} className="mr-2" />Prevalensi Stunting</h4>
+                                    <div className="space-y-2 text-xs text-gray-700">
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#dc2626' }}></span><span>Sangat Tinggi</span></div><span className="text-gray-500">&gt;40%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#f97316' }}></span><span>Tinggi</span></div><span className="text-gray-500">30-40%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#eab308' }}></span><span>Sedang</span></div><span className="text-gray-500">20-30%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#16a34a' }}></span><span>Rendah</span></div><span className="text-gray-500">&lt;20%</span></div>
                                     </div>
                                 </div>
                             </div>
-                        </>
-                    )}
-                    
-                    <div className={`card transition-all duration-300 ease-in-out ${isFullScreen ? 'fixed inset-0 z-[10000] rounded-none' : 'animate-fade-in-up delay-200'}`}>
-                        {/* --- PERUBAHAN DIMULAI DI SINI: Penyesuaian Responsif untuk Bar Filter Peta --- */}
-                        <div className="flex flex-col lg:flex-row justify-between lg:items-center mb-6 gap-4">
-                            <h2 className="text-2xl font-bold text-gray-900 whitespace-nowrap flex-shrink-0">Peta Interaktif</h2>
-                            <div className="flex w-full flex-col md:flex-row items-stretch md:items-center justify-end gap-3">
-                        {/* --- PERUBAHAN SELESAI DI SINI --- */}
-                                <CustomMultiSelect options={categoryOptions} selectedValues={selectedCategories} onChange={setSelectedCategories} placeholder="Pilih Kategori/Rentang..." allSelectedText="Semua Kategori" isCustomMode={true} isCustomRangeActive={isCustomRangeActive} setIsCustomRangeActive={setIsCustomRangeActive} customRange={customRange} setCustomRange={setCustomRange} />
-                                {activeLevel === 'kecamatan' && (
-                                    <>
-                                        <CustomMultiSelect options={kabupatenOptions} selectedValues={selectedKabupaten} onChange={setSelectedKabupaten} placeholder="Pilih Kabupaten/Kota..." allSelectedText="Semua Kabupaten/Kota" />
-                                        <button
-                                            onClick={handleDownloadData}
-                                            className="p-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg flex-shrink-0"
-                                            title="Unduh Data Estimasi Kecamatan"
-                                        >
-                                            <Download size={18} />
-                                        </button>
-                                    </>
-                                )}
+                            <div className="text-right text-xs text-gray-500 mt-2 pr-1">
+                                Sumber Data: {
+                                    activeLevel === 'kecamatan'
+                                        ? 'Hasil Pemodelan Small Area Estimation (SAE)'
+                                        : 'Survei Kesehatan Indonesia (SKI) 2023'
+                                }
                             </div>
-                        </div>
-                        <div className="relative">
-                            <div ref={mapRef} className="w-full h-[600px] md:h-[700px] rounded-xl border border-gray-200 overflow-hidden shadow-sm" style={{ height: isFullScreen ? '100vh' : '600px' }}/>
-                            <div className="absolute top-4 left-4 z-[1000] animate-fade-in-left delay-400">
-                                <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-2 flex flex-col gap-2">
-                                    <button onClick={() => setActiveBasemap('light')} title="Mode Terang" className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${activeBasemap === 'light' ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}><Sun size={18} /></button>
-                                    <button onClick={() => setActiveBasemap('dark')} title="Mode Gelap" className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${activeBasemap === 'dark' ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}><Moon size={18} /></button>
-                                    <button onClick={() => setActiveBasemap('satellite')} title="Mode Satelit" className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${activeBasemap === 'satellite' ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-gray-100 text-gray-600'}`}><Satellite size={18} /></button>
-                                    <div className="h-px bg-gray-200 mx-1" />
-                                    <button onClick={handleResetView} title="Reset Tampilan" className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105"><Expand size={18} /></button>
-                                    <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105">{isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
-                                </div>
-                            </div>
-                            <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200 max-w-xs z-[1000] animate-fade-in-right delay-400">
-                                <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center"><PieChart size={16} className="mr-2" />Prevalensi Stunting</h4>
-                                <div className="space-y-2 text-xs text-gray-700">
-                                    <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#dc2626' }}></span><span>Sangat Tinggi</span></div><span className="text-gray-500">&gt;40%</span></div>
-                                    <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#f97316' }}></span><span>Tinggi</span></div><span className="text-gray-500">30-40%</span></div>
-                                    <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#eab308' }}></span><span>Sedang</span></div><span className="text-gray-500">20-30%</span></div>
-                                    <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#16a34a' }}></span><span>Rendah</span></div><span className="text-gray-500">&lt;20%</span></div>
-                                </div>
-                            </div>
-                        </div>
-                         <div className="text-right text-xs text-gray-500 mt-2 pr-1">
-                            Sumber Data: {
-                                activeLevel === 'kecamatan'
-                                    ? 'Hasil Pemodelan Small Area Estimation (SAE)'
-                                    : 'Survei Kesehatan Indonesia (SKI) 2023'
-                             }
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
         </>

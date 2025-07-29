@@ -34,14 +34,13 @@ const basemaps = {
     satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri' },
 };
 
-// --- MODIFIED: KATEGORI PREVALENSI & WARNA ---
 const getCategory = (prevalensi) => {
     const iconProps = 'xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
     if (prevalensi >= 30) return { name: 'Sangat Tinggi', color: '#dc2626', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>` };
     if (prevalensi >= 20) return { name: 'Tinggi', color: '#f97316', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>` };
     if (prevalensi >= 10) return { name: 'Sedang', color: '#eab308', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 3v19"/></svg>` };
     if (prevalensi >= 2.5) return { name: 'Rendah', color: '#16a34a', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>` };
-    return { name: 'Sangat Rendah', color: '#14532d', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>` }; // Warna diubah ke hijau tua
+    return { name: 'Sangat Rendah', color: '#14532d', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>` };
 };
 
 const categoryOptions = [
@@ -223,7 +222,12 @@ const Dashboard = () => {
         if (!geojsonData) return [];
         return geojsonData.features.filter(feature => {
             const { prevalence, kdkab } = feature.properties;
-            const kabupatenMatch = activeLevel === 'kecamatan' ? (selectedKabupaten.length === 0 || selectedKabupaten.includes(kdkab)) : true;
+            
+            // --- FIX: Logika filter kabupaten diubah di sini ---
+            // Logika lama: (selectedKabupaten.length === 0 || selectedKabupaten.includes(kdkab))
+            // Logika baru hanya memeriksa .includes(). Jika array kosong, hasilnya akan false.
+            const kabupatenMatch = activeLevel === 'kecamatan' ? selectedKabupaten.includes(kdkab) : true;
+            
             if (!kabupatenMatch) return false;
 
             if (isCustomRangeActive) {
@@ -330,6 +334,8 @@ const Dashboard = () => {
                     const uniqueKabupatens = Array.from(new Set(data.features.map(f => JSON.stringify({ kdkab: f.properties.kdkab, nmkab: f.properties.nmkab })))).map(item => JSON.parse(item));
                     const sortedKabupatens = uniqueKabupatens.sort((a, b) => a.kdkab.localeCompare(b.kdkab));
                     setKabupatenOptions(sortedKabupatens.map(k => ({ value: k.kdkab, label: `${k.kdkab} ${k.nmkab}` })));
+                    
+                    // Kondisi ini memastikan filter diisi saat pertama kali pindah ke level kecamatan
                     if (selectedKabupaten.length === 0) {
                         setSelectedKabupaten(sortedKabupatens.map(k => k.kdkab));
                     }
@@ -464,7 +470,6 @@ const Dashboard = () => {
                 const props = feature.properties;
                 const estimasi = props.prevalence;
                 const category = getCategory(estimasi);
-                // --- MODIFIED: Warna gradien popup ---
                 const getLighterColor = (color) => { const colors = { '#dc2626': '#f87171', '#f97316': '#fb923c', '#eab308': '#facc15', '#16a34a': '#4ade80', '#14532d': '#15803d' }; return colors[color] || color; };
 
                 let title, subtitle;
@@ -742,7 +747,6 @@ const Dashboard = () => {
 
                                             {activeLevel !== 'provinsi' ? (
                                                 <>
-                                                    {/* --- MODIFIED: Tampilan Kartu Sebaran --- */}
                                                     <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md">
                                                         <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-gray-100"><PieChart className="w-5 h-5 text-gray-600" /></div><h3 className="text-sm font-semibold text-gray-700">Sebaran {levelName[activeLevel]}</h3></div>
                                                         <div className="space-y-3 text-sm">
@@ -872,7 +876,6 @@ const Dashboard = () => {
                                         <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105">{isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
                                     </div>
                                 </div>
-                                {/* --- MODIFIED: LEGENDA PETA --- */}
                                 <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200 max-w-xs z-[1000] animate-fade-in-right delay-400">
                                     <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center"><PieChart size={16} className="mr-2" />Prevalensi Stunting</h4>
                                     <div className="space-y-2 text-xs text-gray-700">

@@ -34,19 +34,22 @@ const basemaps = {
     satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri' },
 };
 
+// --- MODIFIED: KATEGORI PREVALENSI & WARNA ---
 const getCategory = (prevalensi) => {
     const iconProps = 'xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
-    if (prevalensi > 40) return { name: 'Sangat Tinggi', color: '#dc2626', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>` };
-    if (prevalensi > 30) return { name: 'Tinggi', color: '#f97316', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>` };
-    if (prevalensi > 20) return { name: 'Sedang', color: '#eab308', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 3v19"/></svg>` };
-    return { name: 'Rendah', color: '#16a34a', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>` };
+    if (prevalensi >= 30) return { name: 'Sangat Tinggi', color: '#dc2626', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>` };
+    if (prevalensi >= 20) return { name: 'Tinggi', color: '#f97316', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>` };
+    if (prevalensi >= 10) return { name: 'Sedang', color: '#eab308', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 3v19"/></svg>` };
+    if (prevalensi >= 2.5) return { name: 'Rendah', color: '#16a34a', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>` };
+    return { name: 'Sangat Rendah', color: '#14532d', icon: `<svg ${iconProps}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>` }; // Warna diubah ke hijau tua
 };
 
 const categoryOptions = [
     { value: 'Sangat Tinggi', label: 'Sangat Tinggi' },
     { value: 'Tinggi', label: 'Tinggi' },
     { value: 'Sedang', label: 'Sedang' },
-    { value: 'Rendah', label: 'Rendah' }
+    { value: 'Rendah', label: 'Rendah' },
+    { value: 'Sangat Rendah', label: 'Sangat Rendah' }
 ];
 
 const stuntingFacts = [
@@ -141,7 +144,6 @@ const CustomMultiSelect = ({
         }).join(', ');
     };
     return (
-        // --- PERUBAHAN FINAL ADA DI SINI ---
         <div className="relative w-56" ref={dropdownRef}>
             <button
                 type="button"
@@ -250,10 +252,11 @@ const Dashboard = () => {
 
     const animatedPrevalence = useCountUp(mainStat.value);
 
-    const animatedSangatTinggi = useCountUp(stats.counts.sangatTinggi || 0);
-    const animatedTinggi = useCountUp(stats.counts.tinggi || 0);
-    const animatedSedang = useCountUp(stats.counts.sedang || 0);
-    const animatedRendah = useCountUp(stats.counts.rendah || 0);
+    const animatedSangatTinggi = useCountUp(stats.counts['Sangat Tinggi'] || 0);
+    const animatedTinggi = useCountUp(stats.counts['Tinggi'] || 0);
+    const animatedSedang = useCountUp(stats.counts['Sedang'] || 0);
+    const animatedRendah = useCountUp(stats.counts['Rendah'] || 0);
+    const animatedSangatRendah = useCountUp(stats.counts['Sangat Rendah'] || 0);
     const animatedHighestValue = useCountUp(stats.highest.length > 0 ? stats.highest[0].prevalence : 0);
     const animatedLowestValue = useCountUp(stats.lowest.length > 0 ? stats.lowest[0].prevalence : 0);
 
@@ -341,20 +344,20 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (activeLevel === 'provinsi' || !filteredFeatures) {
-            setStats({ counts: { sangatTinggi: 0, tinggi: 0, sedang: 0, rendah: 0 }, highest: [], lowest: [] });
+            setStats({ counts: {}, highest: [], lowest: [] });
             return;
         }
 
-        let newStats = { counts: { sangatTinggi: 0, tinggi: 0, sedang: 0, rendah: 0 }, highest: [], lowest: [] };
+        const initialCounts = categoryOptions.reduce((acc, opt) => ({ ...acc, [opt.value]: 0 }), {});
+        let newStats = { counts: initialCounts, highest: [], lowest: [] };
 
         const allItems = filteredFeatures.map(f => f.properties);
 
         allItems.forEach(f => {
-            const category = getCategory(f.prevalence).name;
-            if (category === 'Sangat Tinggi') newStats.counts.sangatTinggi++;
-            else if (category === 'Tinggi') newStats.counts.tinggi++;
-            else if (category === 'Sedang') newStats.counts.sedang++;
-            else newStats.counts.rendah++;
+            const categoryName = getCategory(f.prevalence).name;
+            if (newStats.counts.hasOwnProperty(categoryName)) {
+                newStats.counts[categoryName]++;
+            }
         });
 
         newStats.highest = [...allItems].sort((a, b) => b.prevalence - a.prevalence).slice(0, 10);
@@ -461,7 +464,8 @@ const Dashboard = () => {
                 const props = feature.properties;
                 const estimasi = props.prevalence;
                 const category = getCategory(estimasi);
-                const getLighterColor = (color) => { const colors = { '#dc2626': '#f87171', '#f97316': '#fb923c', '#eab308': '#facc15', '#16a34a': '#4ade80' }; return colors[color] || color; };
+                // --- MODIFIED: Warna gradien popup ---
+                const getLighterColor = (color) => { const colors = { '#dc2626': '#f87171', '#f97316': '#fb923c', '#eab308': '#facc15', '#16a34a': '#4ade80', '#14532d': '#15803d' }; return colors[color] || color; };
 
                 let title, subtitle;
                 if (activeLevel === 'kecamatan') {
@@ -738,9 +742,16 @@ const Dashboard = () => {
 
                                             {activeLevel !== 'provinsi' ? (
                                                 <>
-                                                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md">
-                                                        <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-blue-100"><PieChart className="w-5 h-5 text-blue-600" /></div><h3 className="text-sm font-semibold text-blue-700">Sebaran {levelName[activeLevel]}</h3></div>
-                                                        <div className="space-y-3 text-sm"><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span><span className="text-gray-700">Sangat Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedSangatTinggi)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-orange-500 mr-2"></span><span className="text-gray-700">Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedTinggi)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span><span className="text-gray-700">Sedang</span></span><span className="font-bold text-gray-900">{Math.round(animatedSedang)}</span></div><div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span><span className="text-gray-700">Rendah</span></span><span className="font-bold text-gray-900">{Math.round(animatedRendah)}</span></div></div>
+                                                    {/* --- MODIFIED: Tampilan Kartu Sebaran --- */}
+                                                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 animate-fade-in-up delay-300 transition-all duration-300 hover:shadow-md">
+                                                        <div className="flex items-center space-x-3 mb-4"><div className="p-2 rounded-lg bg-gray-100"><PieChart className="w-5 h-5 text-gray-600" /></div><h3 className="text-sm font-semibold text-gray-700">Sebaran {levelName[activeLevel]}</h3></div>
+                                                        <div className="space-y-3 text-sm">
+                                                            <div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#dc2626' }}></span><span className="text-gray-700">Sangat Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedSangatTinggi)}</span></div>
+                                                            <div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#f97316' }}></span><span className="text-gray-700">Tinggi</span></span><span className="font-bold text-gray-900">{Math.round(animatedTinggi)}</span></div>
+                                                            <div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#eab308' }}></span><span className="text-gray-700">Sedang</span></span><span className="font-bold text-gray-900">{Math.round(animatedSedang)}</span></div>
+                                                            <div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#16a34a' }}></span><span className="text-gray-700">Rendah</span></span><span className="font-bold text-gray-900">{Math.round(animatedRendah)}</span></div>
+                                                            <div className="flex justify-between items-center"><span className="flex items-center"><span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: '#14532d' }}></span><span className="text-gray-700">Sangat Rendah</span></span><span className="font-bold text-gray-900">{Math.round(animatedSangatRendah)}</span></div>
+                                                        </div>
                                                     </div>
                                                     <div className={`p-4 rounded-xl bg-orange-50 border border-orange-100 animate-fade-in-up delay-400 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.highest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
                                                         <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-orange-100"><ArrowUpCircle className="w-5 h-5 text-orange-600" /></div><h3 className="text-sm font-semibold text-orange-700">{levelName[activeLevel]} Tertinggi</h3></div><div className={`transition-opacity duration-300 ${showTopHighest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideHighest} className="text-xs font-semibold flex items-center text-orange-600 hover:text-orange-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
@@ -861,13 +872,15 @@ const Dashboard = () => {
                                         <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200 hover:scale-105">{isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}</button>
                                     </div>
                                 </div>
+                                {/* --- MODIFIED: LEGENDA PETA --- */}
                                 <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200 max-w-xs z-[1000] animate-fade-in-right delay-400">
                                     <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center"><PieChart size={16} className="mr-2" />Prevalensi Stunting</h4>
                                     <div className="space-y-2 text-xs text-gray-700">
-                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#dc2626' }}></span><span>Sangat Tinggi</span></div><span className="text-gray-500">&gt;40%</span></div>
-                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#f97316' }}></span><span>Tinggi</span></div><span className="text-gray-500">30-40%</span></div>
-                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#eab308' }}></span><span>Sedang</span></div><span className="text-gray-500">20-30%</span></div>
-                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#16a34a' }}></span><span>Rendah</span></div><span className="text-gray-500">&lt;20%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#dc2626' }}></span><span>Sangat Tinggi</span></div><span className="text-gray-500">&ge;30%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#f97316' }}></span><span>Tinggi</span></div><span className="text-gray-500">20 - &lt;30%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#eab308' }}></span><span>Sedang</span></div><span className="text-gray-500">10 - &lt;20%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#16a34a' }}></span><span>Rendah</span></div><span className="text-gray-500">2.5 - &lt;10%</span></div>
+                                        <div className="flex items-center justify-between"><div className="flex items-center"><span className="w-4 h-4 rounded-full mr-3" style={{ background: '#14532d' }}></span><span>Sangat Rendah</span></div><span className="text-gray-500">&lt;2.5%</span></div>
                                     </div>
                                 </div>
                             </div>

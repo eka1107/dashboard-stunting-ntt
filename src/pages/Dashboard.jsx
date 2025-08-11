@@ -191,6 +191,7 @@ const CustomMultiSelect = ({
 
 const Dashboard = () => {
     const [activeLevel, setActiveLevel] = useState('kecamatan');
+    const [activeEstimationModel, setActiveEstimationModel] = useState('utama'); // 'utama' atau 'alternatif'
     const [geojsonData, setGeojsonData] = useState(null);
     const [kabupatenOptions, setKabupatenOptions] = useState([]);
     const [stats, setStats] = useState({ counts: {}, highest: [], lowest: [] });
@@ -223,10 +224,7 @@ const Dashboard = () => {
         return geojsonData.features.filter(feature => {
             const { prevalence, kdkab } = feature.properties;
             
-            // --- FIX: Logika filter kabupaten diubah di sini ---
-            // Logika lama: (selectedKabupaten.length === 0 || selectedKabupaten.includes(kdkab))
-            // Logika baru hanya memeriksa .includes(). Jika array kosong, hasilnya akan false.
-            const kabupatenMatch = activeLevel === 'kecamatan' ? selectedKabupaten.includes(kdkab) : true;
+            const kabupatenMatch = activeLevel === 'kecamatan' ? (selectedKabupaten.length === 0 || selectedKabupaten.includes(kdkab)) : true;
             
             if (!kabupatenMatch) return false;
 
@@ -291,28 +289,37 @@ const Dashboard = () => {
                     ...data,
                     features: data.features.map(f => {
                         let prevalence;
+                        let rse_value;
+
                         switch (activeLevel) {
                             case 'kecamatan':
-                                prevalence = (f.properties.Data_Estim || 0) * 100;
+                                if (activeEstimationModel === 'alternatif') {
+                                    prevalence = (f.properties["Data_Estimasi_Package"] || 0) * 100;
+                                    rse_value = f.properties["Data_RSE_package"] || 0;
+                                } else {
+                                    prevalence = (f.properties['Data_Estim'] || 0) * 100;
+                                    rse_value = f.properties['Data_RSE K'] || 0;
+                                }
                                 break;
                             case 'kabupaten':
                                 prevalence = f.properties['data_ESTIMASI (%)'] || 0;
+                                rse_value = 0;
                                 break;
                             case 'provinsi':
                                 prevalence = f.properties['data_prevalensi_stunting'] || 0;
+                                rse_value = 0;
                                 break;
                             default:
                                 prevalence = 0;
+                                rse_value = 0;
                         }
-
-                        const rse = f.properties['Data_RSE K'] || 0;
 
                         return {
                             ...f,
                             properties: {
                                 ...f.properties,
                                 prevalence: prevalence,
-                                'Data_RSE K': rse
+                                rse_value: rse_value
                             }
                         };
                     })
@@ -335,7 +342,6 @@ const Dashboard = () => {
                     const sortedKabupatens = uniqueKabupatens.sort((a, b) => a.kdkab.localeCompare(b.kdkab));
                     setKabupatenOptions(sortedKabupatens.map(k => ({ value: k.kdkab, label: `${k.kdkab} ${k.nmkab}` })));
                     
-                    // Kondisi ini memastikan filter diisi saat pertama kali pindah ke level kecamatan
                     if (selectedKabupaten.length === 0) {
                         setSelectedKabupaten(sortedKabupatens.map(k => k.kdkab));
                     }
@@ -346,7 +352,7 @@ const Dashboard = () => {
                 setGeojsonData({ type: 'FeatureCollection', features: [] });
                 setProvincialRankingData([]);
             });
-    }, [activeLevel]);
+    }, [activeLevel, activeEstimationModel]);
 
     useEffect(() => {
         if (activeLevel === 'provinsi' || !filteredFeatures) {
@@ -485,8 +491,8 @@ const Dashboard = () => {
                 }
 
                 let warningContent = '';
-                if (props['Data_RSE K'] > 25) {
-                    const rseValue = props['Data_RSE K'].toFixed(1);
+                if (props.rse_value > 25) {
+                    const rseValue = props.rse_value.toFixed(1);
                     warningContent = `
                         <div class="popup-warning">
                             <div class="popup-warning-icon">
@@ -623,21 +629,40 @@ const Dashboard = () => {
 
     const handleDownloadData = () => {
         if (!geojsonData) return;
-
-        const csvHeader = ['nmkec', 'nmkab', 'Data_Estim', 'Data_RSE K\n'];
+    
+        const csvHeader = [
+            'nmkec', 
+            'nmkab', 
+            'prevalensi_model_utama', 
+            'rse_model_utama', 
+            'prevalensi_model_alternatif', 
+            'rse_model_alternatif\n'
+        ];
+    
         const csvRows = geojsonData.features.map(feature => {
-            const { nmkec, nmkab, Data_Estim } = feature.properties;
-            const rseK = feature.properties['Data_RSE K'];
-            return [nmkec, nmkab, Data_Estim, rseK].join(',');
+            const { nmkec, nmkab } = feature.properties;
+            const estimasiUtama = feature.properties['Data_Estim'];
+            const rseUtama = feature.properties['Data_RSE K'];
+            const estimasiAlternatif = feature.properties["Data_Estimasi_Package"];
+            const rseAlternatif = feature.properties["Data_RSE_package"];
+            
+            return [
+                `"${nmkec}"`, 
+                `"${nmkab}"`, 
+                estimasiUtama || '', 
+                rseUtama || '', 
+                estimasiAlternatif || '', 
+                rseAlternatif || ''
+            ].join(',');
         });
-
-        const csvContent = "data:text/csv;charset=utf-8,"
+    
+        const csvContent = "data:text/csv;charset=utf-8," 
             + csvHeader.join(',') + csvRows.join('\n');
-
+    
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "estimasi_stunting_kecamatan_ntt.csv");
+        link.setAttribute("download", "estimasi_stunting_kecamatan_ntt_komparasi.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -760,24 +785,24 @@ const Dashboard = () => {
                                                     <div className={`p-4 rounded-xl bg-orange-50 border border-orange-100 animate-fade-in-up delay-400 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.highest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
                                                         <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-orange-100"><ArrowUpCircle className="w-5 h-5 text-orange-600" /></div><h3 className="text-sm font-semibold text-orange-700">{levelName[activeLevel]} Tertinggi</h3></div><div className={`transition-opacity duration-300 ${showTopHighest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideHighest} className="text-xs font-semibold flex items-center text-orange-600 hover:text-orange-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
                                                         <div className="card-content-wrapper">{stats.highest.length > 0 ? (<><div className={`card-content ${isHighestFading || showTopHighest ? 'fading' : ''} ${!isHighestFading && !showTopHighest ? 'entering' : 'pointer-events-none'}`}><p className="text-base font-bold text-gray-900 leading-tight truncate mb-1">{stats.highest[0].nmkec || stats.highest[0].KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-xs text-gray-600 mb-3 truncate">Kab. {stats.highest[0].nmkab}</p>}<p className="text-2xl font-bold text-orange-600 mb-2">{animatedHighestValue.toFixed(1)}%</p><button onClick={handleShowHighest} className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline">Lihat Selengkapnya →</button></div><div className={`absolute top-0 left-0 w-full card-content ${isHighestFading || !showTopHighest ? 'fading' : ''} ${!isHighestFading && showTopHighest ? 'entering' : 'pointer-events-none'}`}>
-                                                            <div className="space-y-1 text-xs scrollable-list">{stats.highest.map((item, index) => (
-                                                                <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-orange-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
-                                                                    <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
-                                                                    <p className="font-bold text-orange-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
-                                                                </div>
-                                                            ))}</div>
-                                                        </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
+                                                                <div className="space-y-1 text-xs scrollable-list">{stats.highest.map((item, index) => (
+                                                                    <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-orange-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
+                                                                        <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
+                                                                        <p className="font-bold text-orange-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
+                                                                    </div>
+                                                                ))}</div>
+                                                            </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
                                                     </div>
                                                     <div className={`p-4 rounded-xl bg-green-50 border border-green-100 animate-fade-in-up delay-500 transition-all duration-300 hover:shadow-md ${highlightedFeature && stats.lowest.some(k => (k.kdkec || k.kdkab) === highlightedFeature) ? 'card-highlighted' : ''}`}>
                                                         <div className="flex items-center justify-between mb-4"><div className="flex items-center space-x-3"><div className="p-2 rounded-lg bg-green-100"><ArrowDownCircle className="w-5 h-5 text-green-600" /></div><h3 className="text-sm font-semibold text-green-700">{levelName[activeLevel]} Terendah</h3></div><div className={`transition-opacity duration-300 ${showTopLowest ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}><button onClick={handleHideLowest} className="text-xs font-semibold flex items-center text-green-600 hover:text-green-700"><ArrowLeft size={12} className="mr-1" />Kembali</button></div></div>
                                                         <div className="card-content-wrapper">{stats.lowest.length > 0 ? (<><div className={`card-content ${isLowestFading || showTopLowest ? 'fading' : ''} ${!isLowestFading && !showTopLowest ? 'entering' : 'pointer-events-none'}`}><p className="text-base font-bold text-gray-900 leading-tight truncate mb-1">{stats.lowest[0].nmkec || stats.lowest[0].KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-xs text-gray-600 mb-3 truncate">Kab. {stats.lowest[0].nmkab}</p>}<p className="text-2xl font-bold text-green-600 mb-2">{animatedLowestValue.toFixed(1)}%</p><button onClick={handleShowLowest} className="text-xs font-medium text-green-600 hover:text-green-700 hover:underline">Lihat Selengkapnya →</button></div><div className={`absolute top-0 left-0 w-full card-content ${isLowestFading || !showTopLowest ? 'fading' : ''} ${!isLowestFading && showTopLowest ? 'entering' : 'pointer-events-none'}`}>
-                                                            <div className="space-y-1 text-xs scrollable-list">{stats.lowest.map((item, index) => (
-                                                                <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-green-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
-                                                                    <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
-                                                                    <p className="font-bold text-green-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
-                                                                </div>
-                                                            ))}</div>
-                                                        </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
+                                                                <div className="space-y-1 text-xs scrollable-list">{stats.lowest.map((item, index) => (
+                                                                    <div key={index} onClick={() => handleFeatureClick(item)} className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer hover:bg-green-100 transition-colors ${highlightedFeature === (item.kdkec || item.kdkab) ? 'list-item-highlighted' : ''}`}>
+                                                                        <div className="flex items-center flex-1 min-w-0"><div className="rank-circle mr-3">{index + 1}</div><div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 truncate">{item.nmkec || item.KABKOT}</p>{activeLevel === 'kecamatan' && <p className="text-gray-600 truncate">Kab. {item.nmkab}</p>}</div></div>
+                                                                        <p className="font-bold text-green-600 text-sm ml-2">{item.prevalence.toFixed(1)}%</p>
+                                                                    </div>
+                                                                ))}</div>
+                                                            </div></>) : (<div className="flex items-center justify-center h-20 text-sm text-gray-400">Memuat data...</div>)}</div>
                                                     </div>
                                                 </>
                                             ) : (
@@ -829,9 +854,25 @@ const Dashboard = () => {
                         )}
 
                         <div className={`card transition-all duration-300 ease-in-out ${isFullScreen ? 'fixed inset-0 z-[10000] rounded-none' : 'animate-fade-in-up delay-200'}`}>
-                            <div className="flex flex-col lg:flex-row justify-between lg:items-center mb-6 gap-4">
+                            <div className="flex flex-col lg:flex-row justify-between lg:items-center mb-4 gap-4">
                                 <h2 className="text-2xl font-bold text-gray-900 whitespace-nowrap flex-shrink-0">Peta Interaktif</h2>
-                                <div className="flex w-full flex-col md:flex-row items-end md:items-center justify-end gap-3">
+                                <div className="flex w-full lg:w-auto flex-col md:flex-row items-start md:items-center justify-end gap-3 flex-shrink-0">
+                                    {activeLevel === 'kecamatan' && (
+                                        <div className="flex items-center bg-gray-100 p-1 rounded-lg shadow-inner">
+                                            <button 
+                                                onClick={() => setActiveEstimationModel('utama')} 
+                                                className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors duration-200 ${activeEstimationModel === 'utama' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+                                            >
+                                                Model Utama
+                                            </button>
+                                            <button 
+                                                onClick={() => setActiveEstimationModel('alternatif')}
+                                                className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors duration-200 ${activeEstimationModel === 'alternatif' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+                                            >
+                                                Model Alternatif
+                                            </button>
+                                        </div>
+                                    )}
                                     <CustomMultiSelect
                                         options={categoryOptions}
                                         selectedValues={selectedCategories}
@@ -864,6 +905,23 @@ const Dashboard = () => {
                                     )}
                                 </div>
                             </div>
+
+                            {/* --- MODIFIKASI: Kotak info dinamis untuk deskripsi model --- */}
+                            {activeLevel === 'kecamatan' && (
+                                <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded-r-lg text-sm my-4 flex items-start gap-3">
+                                    <Info size={18} className="flex-shrink-0 mt-0.5" />
+                                    <p className="flex-grow">
+                                        {/* <span className="font-bold">
+                                            {activeEstimationModel === 'utama' ? 'Model Utama: ' : 'Model Alternatif: '}
+                                        </span> */}
+                                        {activeEstimationModel === 'utama'
+                                            ? 'Model memiliki hasil estimasi yang valid, namun terdapat 32 kecamatan yang kurang presisi'
+                                            : 'Model memiliki presisi hasil estimasi yang tinggi, namun terdapat hasil estimasi kecamatan yang belum valid di Kabupaten Ngada dan Sumba Timur'
+                                        }
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="relative">
                                 <div ref={mapRef} className="w-full h-[600px] md:h-[700px] rounded-xl border border-gray-200 overflow-hidden shadow-sm" style={{ height: isFullScreen ? '100vh' : '600px' }} />
                                 <div className="absolute top-4 left-4 z-[1000] animate-fade-in-left delay-400">
@@ -890,7 +948,7 @@ const Dashboard = () => {
                             <div className="text-right text-xs text-gray-500 mt-2 pr-1">
                                 Sumber Data: {
                                     activeLevel === 'kecamatan'
-                                        ? 'Hasil Pemodelan Small Area Estimation (SAE)'
+                                        ? `SAE (Model ${activeEstimationModel === 'utama' ? 'Utama' : 'Alternatif'})`
                                         : 'Survei Kesehatan Indonesia (SKI) 2023'
                                 }
                             </div>
